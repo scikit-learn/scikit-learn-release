@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   build_wheels:
-    name: Build wheel for cp${{ matrix.python }}-${{ matrix.platform_id }}-${{ matrix.manylinux_image }}
+    name: Build wheel for cp${{ matrix.python }}-${{ matrix.platform_id }}
     if: github.repository == 'scikit-learn/scikit-learn-release'
     runs-on: ${{ matrix.os }}
     defaults:
@@ -39,12 +39,107 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Window 64 bit
+          - os: windows-latest
+            python: 311
+            platform_id: win_amd64
+          - os: windows-latest
+            python: 312
+            platform_id: win_amd64
+          - os: windows-latest
+            python: 313
+            platform_id: win_amd64
+          - os: windows-latest
+            python: 314
+            platform_id: win_amd64
+          - os: windows-latest
+            python: 314t
+            platform_id: win_amd64
 
-        # Linux
+          # Windows on ARM64 (WoA)
+          - os: windows-11-arm
+            python: 311
+            platform_id: win_arm64
+          - os: windows-11-arm
+            python: 312
+            platform_id: win_arm64
+          - os: windows-11-arm
+            python: 313
+            platform_id: win_arm64
+          - os: windows-11-arm
+            python: 314
+            platform_id: win_arm64
+          - os: windows-11-arm
+            python: 314t
+            platform_id: win_arm64
+
+          # Linux
+          - os: ubuntu-latest
+            python: 311
+            platform_id: manylinux_x86_64
+          - os: ubuntu-latest
+            python: 312
+            platform_id: manylinux_x86_64
+          - os: ubuntu-latest
+            python: 313
+            platform_id: manylinux_x86_64
+          - os: ubuntu-latest
+            python: 314
+            platform_id: manylinux_x86_64
           - os: ubuntu-latest
             python: 314t
             platform_id: manylinux_x86_64
-            manylinux_image: manylinux_2_28
+
+          # Linux arm
+          - os: ubuntu-24.04-arm
+            python: 311
+            platform_id: manylinux_aarch64
+          - os: ubuntu-24.04-arm
+            python: 312
+            platform_id: manylinux_aarch64
+          - os: ubuntu-24.04-arm
+            python: 313
+            platform_id: manylinux_aarch64
+          - os: ubuntu-24.04-arm
+            python: 314
+            platform_id: manylinux_aarch64
+          - os: ubuntu-24.04-arm
+            python: 314t
+            platform_id: manylinux_aarch64
+
+          # MacOS x86_64
+          - os: macos-15-intel
+            python: 311
+            platform_id: macosx_x86_64
+          - os: macos-15-intel
+            python: 312
+            platform_id: macosx_x86_64
+          - os: macos-15-intel
+            python: 313
+            platform_id: macosx_x86_64
+          - os: macos-15-intel
+            python: 314
+            platform_id: macosx_x86_64
+          - os: macos-15-intel
+            python: 314t
+            platform_id: macosx_x86_64
+
+          # MacOS arm64
+          - os: macos-14
+            python: 311
+            platform_id: macosx_arm64
+          - os: macos-14
+            python: 312
+            platform_id: macosx_arm64
+          - os: macos-14
+            python: 313
+            platform_id: macosx_arm64
+          - os: macos-14
+            python: 314
+            platform_id: macosx_arm64
+          - os: macos-14
+            python: 314t
+            platform_id: macosx_arm64
 
     steps:
       - name: Checkout scikit-learn-release
@@ -52,7 +147,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Checkout scikit-learn-release
+      - name: Checkout scikit-learn
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: scikit-learn/scikit-learn
@@ -60,37 +155,154 @@ jobs:
           path: scikit-learn-src
           persist-credentials: false
 
-      - name: Build and test wheels
-        env:
-          CIBW_ENVIRONMENT: SKLEARN_SKIP_NETWORK_TESTS=1
-          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
-          CIBW_ARCHS: all
-          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
-          CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.manylinux_image }}
-          # Needed on Windows CI to compile with Visual Studio compiler
-          # otherwise Meson detects a MINGW64 platform and use MINGW64
-          # toolchain
-          # CIBW_CONFIG_SETTINGS_WINDOWS: "setup-args=--vsenv"
-          # CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: bash build_tools/github/repair_windows_wheels.sh {wheel} {dest_dir}
-          # CIBW_BEFORE_BUILD: bash {project}/build_tools/wheels/cibw_before_build.sh {project}
-          # CIBW_BEFORE_TEST_WINDOWS: bash build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{matrix.platform_id}}
-          CIBW_ENVIRONMENT_PASS_LINUX: RUNNER_OS
-          # TODO Put back pandas when there is a pandas release with Python 3.14 wheels
-          # CIBW_TEST_REQUIRES: ${{ contains(matrix.python, '314') && 'pytest' || 'pytest pandas' }} scipy
-          # On Windows, we use a custom Docker image and CIBW_TEST_REQUIRES_WINDOWS
-          # does not make sense because it would install dependencies in the host
-          # rather than inside the Docker image
-          CIBW_TEST_REQUIRES_WINDOWS: ""
-          # CIBW_TEST_COMMAND: bash {project}/build_tools/wheels/test_wheels.sh {project}
-          # CIBW_TEST_COMMAND_WINDOWS: bash {project}/build_tools/github/test_windows_wheels.sh ${{ matrix.python }} {project} ${{matrix.platform_id}}
-          CIBW_BUILD_VERBOSITY: 1
+      - uses: mamba-org/setup-micromamba@d7c9bd84e824b79d2af72a2d4196c7f4300d3476 # v3.0.0
+        if: ${{ startsWith(matrix.platform_id, 'macosx') }}
+        with:
+          micromamba-version: '2.8.1-0'
+
+      - name: Set-up macOS
+        if: ${{ startsWith(matrix.platform_id, 'macosx') }}
+        run: bash tools/configure_macos_env.sh
+
+      - name: Set SOURCE_DATE_EPOCH from source commit
         run: |
-          cd scikit-learn-src
-          python -m pip install cibuildwheel
-          python -m cibuildwheel --output-dir wheelhouse
+          echo "SOURCE_DATE_EPOCH=$(git -C scikit-learn-src log -1 --pretty=%ct)" >> "$GITHUB_ENV"
+
+      - name: Build and test wheels
+        uses: pypa/cibuildwheel@f03ac7617d6cff873ccf24cc0d567ef5ba5a9e6d # v4.0.0
+        env:
+          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
+          CIBW_BEFORE_TEST_WINDOWS: bash tools/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.platform_id }}
+          CIBW_TEST_COMMAND_WINDOWS: bash {project}/tools/test_windows_wheels.sh ${{ matrix.python }} {project} ${{ matrix.platform_id }}
+          SOURCE_DATE_EPOCH: ${{ env.SOURCE_DATE_EPOCH }}
+          PYTHONHASHSEED: "0"
+          CIBW_ENVIRONMENT_PASS_LINUX: SOURCE_DATE_EPOCH PYTHONHASHSEED RUNNER_OS
+        with:
+           package-dir: scikit-learn-src
+           output-dir: dist
+           config-file: cibuildwheel.toml
 
       - name: Store artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cibw-wheels-cp${{ matrix.python }}-${{ matrix.platform_id }}
-          path: scikit-learn-src/wheelhouse/*.whl
+          path: ./dist/*.whl
+
+  build_sdist:
+    name: Source distribution
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout scikit-learn-release
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Checkout scikit-learn
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: scikit-learn/scikit-learn
+          ref: ${{ env.SOURCE_REF_TO_BUILD }}
+          path: scikit-learn-src
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # 6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Build source distribution
+        run: bash tools/build_source.sh
+
+      - name: Test source distribution
+        run: bash tools/test_source.sh
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cibw-sdist
+          path: dist/*.tar.gz
+
+  testpypi-publish:
+    name: Publish release to TestPyPI
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'testpypi'
+    runs-on: ubuntu-latest
+    needs: [build_wheels, build_sdist]
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/scikit-learn
+    permissions:
+      id-token: write  # mandatory for trusted publishing
+    steps:
+      - name: Download sdist and wheels
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: View artifacts
+        run: ls dist
+
+      # - name: Publish
+      #   uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+      #   with:
+      #     repository-url: https://test.pypi.org/legacy/
+      #     skip-existing: true
+      #     print-hash: true
+      #     attestations: true
+
+  nightly_upload:
+    name: Nightly upload
+    if: github.repository == 'scikit-learn/scikit-learn-release' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'none'))
+    runs-on: ubuntu-latest
+    needs: [build_wheels]
+
+    steps:
+      - name: Download sdist and wheels
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Install micromamba
+        uses: mamba-org/setup-micromamba@d7c9bd84e824b79d2af72a2d4196c7f4300d3476 # v3.0.0
+        with:
+          # For installation of anaconda-client, required for upload to anaconda.org
+          init-shell: bash
+          environment-name: upload-env
+          create-args: >-
+            anaconda-client
+
+      # - name: Upload to anaconda.org
+      #   shell: bash -el {0}  # required for micromamba
+      #   env:
+      #     TOKEN: ${{ secrets.SCIKIT_LEARN_NIGHTLY_UPLOAD_TOKEN }}
+      #   run: |
+      #     anaconda -q -t ${TOKEN} upload --force -u scientific-python-nightly-wheels ./dist/*.whl
+
+  pypi-publish:
+    name: Publish release to PyPI
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'pypi'
+    runs-on: ubuntu-latest
+    needs: [build_wheels, build_sdist]
+    environment:
+      name: pypi
+      url: https://pypi.org/p/scikit-learn
+    permissions:
+      id-token: write  # mandatory for trusted publishing
+    steps:
+      - name: Download sdist and wheels
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: View artifacts
+        run: ls dist
+
+      # - name: Publish
+      #   uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+      #   with:
+      #     print-hash: true
+      #     attestations: true
+
