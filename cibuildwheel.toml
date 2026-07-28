@@ -15,7 +15,3 @@ test-command = "bash {project}/tools/test_wheels.sh {project}"
 # toolchain
 config-settings = "setup-args=--vsenv"
 repair-wheel-command = "bash tools/repair_windows_wheels.sh {wheel} {dest_dir}"
-# On Windows, we use a custom Docker image and the test dependencies are
-# installed inside the Docker image rather than on the host, so there are no
-# test requirements to install here.
-test-requires = []

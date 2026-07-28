@@ -174,8 +174,6 @@ jobs:
         uses: pypa/cibuildwheel@f03ac7617d6cff873ccf24cc0d567ef5ba5a9e6d # v4.0.0
         env:
           CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
-          CIBW_BEFORE_TEST_WINDOWS: bash tools/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.platform_id }}
-          CIBW_TEST_COMMAND_WINDOWS: bash {project}/tools/test_windows_wheels.sh ${{ matrix.python }} {project} ${{ matrix.platform_id }}
           SOURCE_DATE_EPOCH: ${{ env.SOURCE_DATE_EPOCH }}
           PYTHONHASHSEED: "0"
           CIBW_ENVIRONMENT_PASS_LINUX: SOURCE_DATE_EPOCH PYTHONHASHSEED RUNNER_OS
@@ -183,6 +181,15 @@ jobs:
            package-dir: scikit-learn-src
            output-dir: dist
            config-file: cibuildwheel.toml
+
+      # Running in a minimal Docker image makes sure that we are vendoring
+      # correctly the shared libraries for MSVC C++ runtime and OpenMP in the
+      # Windows wheel
+      - name: Test Windows wheel in a minimal Docker image
+        # Currently Windows ARM64 runners do not have Docker support and there
+        # is no Docker image with free-threaded
+        if: ${{ matrix.platform_id == 'win_amd64' && !contains(matrix.python, 't') }}
+        run: bash build_tools/github/test_windows_wheels_in_docker.sh ${{ matrix.python }}
 
       - name: Store artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
