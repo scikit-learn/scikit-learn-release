@@ -182,6 +182,11 @@ jobs:
            output-dir: dist
            config-file: cibuildwheel.toml
 
+      # Necessary to avoid GHA issues with Docker on Windows
+      # https://github.com/actions/runner-images/issues/13729
+      - name: Wait for Docker to be ready
+        run: pwsh tools/wait-for-docker-windows.ps1
+
       # Running in a minimal Docker image makes sure that we bundled correctly
       # the shared libraries for MSVC C++ runtime and OpenMP in the Windows
       # wheel
