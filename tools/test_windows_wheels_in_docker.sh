@@ -21,4 +21,7 @@ function exec_inside_container() {
 exec_inside_container "python -m venv C:/venv"
 exec_inside_container "C:/venv/Scripts/python -m pip install $MNT_FOLDER/$WHEEL_PATH"
 exec_inside_container "C:/venv/Scripts/python -c 'import sklearn; sklearn.show_versions()'"
+# Running the estimator checks is a good enough check to make sure we bundled
+# correctly shared libraries on Windows, while still being reasonably fast to
+# run.
 exec_inside_container "C:/venv/Scripts/python -m sklearn.utils.tests.test_estimator_checks"
