@@ -5,11 +5,10 @@ set -x
 
 PYTHON_VERSION=$1
 
-WHEEL_PATH=$(ls wheelhouse/*.whl)
-WHEEL_NAME=$(basename "$WHEEL_PATH")
+WHEEL_PATH=$(ls dist/*.whl)
 
 # Dot the Python version for identifying the base Docker image.
-PYTHON_DOCKER_IMAGE_PART=$(echo "${PYTHON_VERSION:0:1}.${PYTHON_VERSION:1:2}")
+PYTHON_DOCKER_IMAGE_PART="${PYTHON_VERSION:0:1}.${PYTHON_VERSION:1:2}"
 
 DOCKER_IMAGE="winamd64/python:${PYTHON_DOCKER_IMAGE_PART}-windowsservercore"
 MNT_FOLDER="C:/mnt"
@@ -20,6 +19,6 @@ function exec_inside_container() {
 }
 
 exec_inside_container "python -m venv C:/venv"
-exec_inside_container "C:/venv/Scripts/python -m pip install $MNT_FOLDER/wheelhouse/$WHEEL_NAME"
+exec_inside_container "C:/venv/Scripts/python -m pip install $MNT_FOLDER/$WHEEL_PATH"
 exec_inside_container "C:/venv/Scripts/python -c 'import sklearn; sklearn.show_versions()'"
 exec_inside_container "C:/venv/Scripts/python -m sklearn.utils.tests.test_estimator_checks"
