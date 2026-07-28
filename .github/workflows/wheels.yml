@@ -189,7 +189,7 @@ jobs:
         # Currently Windows ARM64 runners do not have Docker support and there
         # is no Docker image with free-threaded
         if: ${{ matrix.platform_id == 'win_amd64' && !contains(matrix.python, 't') }}
-        run: bash build_tools/github/test_windows_wheels_in_docker.sh ${{ matrix.python }}
+        run: bash tools/test_windows_wheels_in_docker.sh ${{ matrix.python }}
 
       - name: Store artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
