@@ -182,19 +182,13 @@ jobs:
            output-dir: dist
            config-file: cibuildwheel.toml
 
-      # Necessary to avoid GHA issues with Docker on Windows
-      # https://github.com/actions/runner-images/issues/13729
-      - name: Wait for Docker to be ready
-        run: pwsh tools/wait-for-docker-windows.ps1
-
-      # Running in a minimal Docker image makes sure that we bundled correctly
-      # the shared libraries for MSVC C++ runtime and OpenMP in the Windows
-      # wheel
       - name: Test Windows wheel in a minimal Docker image
         # Currently Windows ARM64 runners do not have Docker support and there
         # is no Docker image with free-threaded
         if: ${{ matrix.platform_id == 'win_amd64' && !contains(matrix.python, 't') }}
-        run: bash tools/test_windows_wheels_in_docker.sh ${{ matrix.python }}
+        run: |
+          pwsh tools/wait-for-docker-windows.ps1
+          bash tools/test_windows_wheels_in_docker.sh ${{ matrix.python }}
 
       - name: Store artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
