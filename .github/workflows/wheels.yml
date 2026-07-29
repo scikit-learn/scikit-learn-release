@@ -263,6 +263,7 @@ jobs:
     name: Nightly upload
     if: github.repository == 'scikit-learn/scikit-learn-release' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'none'))
     runs-on: ubuntu-latest
+    environment: upload_anaconda
     needs: [build_wheels, build_sdist]
 
     steps:
@@ -281,12 +282,12 @@ jobs:
           create-args: >-
             anaconda-client
 
-      # - name: Upload to anaconda.org
-      #   shell: bash -el {0}  # required for micromamba
-      #   env:
-      #     TOKEN: ${{ secrets.SCIKIT_LEARN_NIGHTLY_UPLOAD_TOKEN }}
-      #   run: |
-      #     anaconda -q -t ${TOKEN} upload --force -u scientific-python-nightly-wheels ./dist/*.whl
+      - name: Upload to anaconda.org
+        shell: bash -el {0}  # required for micromamba
+        env:
+          TOKEN: ${{ secrets.SCIKIT_LEARN_NIGHTLY_UPLOAD_TOKEN }}
+        run: |
+          anaconda -q -t ${TOKEN} upload --force -u scientific-python-nightly-wheels ./dist/*.whl
 
   pypi-publish:
     name: Publish release to PyPI
