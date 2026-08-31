@@ -1,5 +1,6 @@
 numpy==2.4.6
-scipy==1.17.1
+scipy==1.17.1; python_version == "3.11"
+scipy==1.18.1; python_version != "3.11"
 cython==3.2.5
 twine==6.2.0
 build==1.5.0
