@@ -221,7 +221,9 @@ jobs:
       - name: Test Windows wheel in a minimal Docker image
         # Currently Windows ARM64 runners do not have Docker support and there
         # is no Docker image with free-threaded
-        if: ${{ matrix.platform_id == 'win_amd64' && !contains(matrix.python, 't') }}
+        # TODO Add Python 3.15 when it is released and a winamd64/python:315-windowsservercore
+        # Docker image is available
+        if: ${{ matrix.platform_id == 'win_amd64' && !contains(matrix.python, 't') && !contains(matrix.python, '315' }}
         run: |
           pwsh tools/wait-for-docker-windows.ps1
           bash tools/test_windows_wheels_in_docker.sh ${{ matrix.python }}
