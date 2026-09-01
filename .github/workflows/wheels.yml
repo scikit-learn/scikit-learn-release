@@ -289,13 +289,13 @@ jobs:
       - name: View artifacts
         run: ls dist
 
-      # - name: Publish
-      #   uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
-      #   with:
-      #     repository-url: https://test.pypi.org/legacy/
-      #     skip-existing: true
-      #     print-hash: true
-      #     attestations: true
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+          print-hash: true
+          attestations: true
 
   nightly_upload:
     name: Nightly upload
