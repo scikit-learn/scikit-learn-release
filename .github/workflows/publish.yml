@@ -1,0 +1,90 @@
+name: Publish to TestPyPI or PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: scikit-learn version to publish
+        required: true
+        type: string
+      target:
+        description: Package index to upload to
+        required: true
+        type: choice
+        options: ["testpypi", "pypi"]
+
+run-name: Publish ${{ inputs.version }} to ${{ inputs.target }}
+
+jobs:
+  publish:
+    name: Upload to ${{ inputs.target }}
+    if: github.repository == 'scikit-learn/scikit-learn-release'
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target }}
+      url: ${{ inputs.target == 'pypi' && 'https://pypi.org/p/scikit-learn' || 'https://test.pypi.org/p/scikit-learn' }}
+    permissions:
+      actions: read  # list runs and download artifacts
+      id-token: write  # mandatory for trusted publishing
+    steps:
+      # find the last successful build-wheels.yml runs, manually dispatched from `main`,
+      # for which the sdist name matches the requested version.
+      - name: Find build run
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SKLEARN_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          sdist="scikit_learn-${SKLEARN_VERSION}.tar.gz"
+          run_ids=$(
+            gh run list --workflow build-wheels.yml --status success --limit 10 \
+              --event workflow_dispatch --branch main \
+              --json databaseId --jq '.[].databaseId'
+          )
+          for id in $run_ids; do
+            rm -rf sdist-check
+            if gh run download "$id" -n cibw-sdist -D sdist-check && find sdist-check -name "$sdist" | grep -q .; then
+              echo "Using https://github.com/${GH_REPO}/actions/runs/${id}"
+              echo "run_id=$id" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "No successful build-wheels.yml run with $sdist in the last 10 runs."
+          exit 1
+
+      - name: Download sdist and wheels
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          run-id: ${{ steps.find.outputs.run_id }}
+          github-token: ${{ github.token }}
+          merge-multiple: true
+
+      - name: View artifacts
+        run: ls -l dist
+
+      # Make sure a tag exists and matches the built commit before uploading to PyPI.
+      - name: Check tag matches the built commit
+        if: inputs.target == 'pypi'
+        env:
+          SKLEARN_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          built=$(cat sklearn-sha.txt)
+          echo "built sklearn commit: $built"
+          git clone --depth 1 --branch "$SKLEARN_VERSION" https://github.com/scikit-learn/scikit-learn.git sklearn-tag
+          tagged=$(git -C sklearn-tag rev-parse HEAD)
+          echo "tag $SKLEARN_VERSION: $tagged"
+          if [[ "$built" != "$tagged" ]]; then
+            echo "tag ${SKLEARN_VERSION} must point at the commit that produced these artifacts."
+            exit 1
+          fi
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        with:
+          repository-url: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || '' }}
+          skip-existing: ${{ inputs.target == 'testpypi' }}
+          print-hash: true
+          attestations: true
