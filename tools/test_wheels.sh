@@ -6,7 +6,7 @@ set -x
 PROJECT_DIR="$1"
 SCIKIT_LEARN_CONFIG=$(
     python -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' \
-    "$PROJECT_DIR/../scikit-learn/pyproject.toml"
+    "$PROJECT_DIR/../scikit-learn-src/pyproject.toml"
 )
 
 
