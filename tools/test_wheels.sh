@@ -4,6 +4,11 @@ set -e
 set -x
 
 PROJECT_DIR="$1"
+SCIKIT_LEARN_CONFIG=$(
+    python -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' \
+    "$PROJECT_DIR/scikit-learn-src/pyproject.toml"
+)
+
 
 python $PROJECT_DIR/tools/check_license.py
 
@@ -24,7 +29,7 @@ python -c "import sklearn; sklearn.show_versions()"
 
 if pip show -qq pytest-xdist; then
     XDIST_WORKERS=$(python -c "import joblib; print(joblib.cpu_count(only_physical_cores=True))")
-    pytest --pyargs sklearn -n $XDIST_WORKERS
+    pytest -c "$SCIKIT_LEARN_CONFIG" --pyargs sklearn -n "$XDIST_WORKERS"
 else
-    pytest --pyargs sklearn
+    pytest -c "$SCIKIT_LEARN_CONFIG" --pyargs sklearn
 fi
