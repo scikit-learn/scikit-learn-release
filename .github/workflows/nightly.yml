@@ -4,6 +4,7 @@ on:
   schedule:
     # 01:01 UTC every day
     - cron: "1 1 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
