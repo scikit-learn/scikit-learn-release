@@ -44,20 +44,3 @@ jobs:
           ANACONDA_API_TOKEN: ${{ secrets.SCIKIT_LEARN_NIGHTLY_UPLOAD_TOKEN }}
         run: |
           anaconda -q upload --force -u scientific-python-nightly-wheels ./dist/*
-
-  # Open/update a tracking issue on scikit-learn when this nightly fails.
-  # Uncomment when:
-  # - BOT_GITHUB_TOKEN is set on this repo (issues: write on scikit-learn)
-  # - scikit-learn/.github/workflows/update_tracking_issue.yml accepts
-  #   issue_repo, always checkouts scikit-learn/scikit-learn for the script,
-  #   and no longer requires github.repository == 'scikit-learn/scikit-learn'
-  #
-  # update-tracker:
-  #   needs: [build]
-  #   if: ${{ always() && github.repository == 'scikit-learn/scikit-learn-release' }}
-  #   uses: scikit-learn/scikit-learn/.github/workflows/update_tracking_issue.yml@main
-  #   with:
-  #     job_status: ${{ needs.build.result }}
-  #     issue_repo: scikit-learn/scikit-learn
-  #   secrets:
-  #     BOT_GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}
