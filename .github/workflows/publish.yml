@@ -85,10 +85,10 @@ jobs:
           set -euo pipefail
           version=$(basename dist/scikit_learn-*.tar.gz .tar.gz)
           version=${version#scikit_learn-}
-          built=$(cat sklearn-sha.txt)
+          built=$(cat scikit-learn-sha.txt)
           echo "publishing scikit-learn $version, built from $built"
-          git clone --depth 1 --branch "$version" https://github.com/scikit-learn/scikit-learn.git sklearn-tag
-          tagged=$(git -C sklearn-tag rev-parse HEAD)
+          git clone --depth 1 --branch "$version" https://github.com/scikit-learn/scikit-learn.git scikit-learn-tag
+          tagged=$(git -C scikit-learn-tag rev-parse HEAD)
           echo "tag $version: $tagged"
           if [[ "$built" != "$tagged" ]]; then
             echo "tag $version must point at the commit that produced these artifacts."
